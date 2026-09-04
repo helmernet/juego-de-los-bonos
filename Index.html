@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Juego de los Bonos — Simulador de hegemonía de la FED</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e0c; --panel:#0d1310; --line:rgba(150,210,175,.16); --line2:rgba(150,210,175,.32);
+  --ink:#cfe6d6; --dim:#6f8a7b; --green:#57c983; --red:#e06555; --gold:#d4a94e; --paper:#eaf4ec;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-color:#22352b var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+#guill{position:fixed;inset:0;z-index:0;pointer-events:none;transition:filter .5s}
+body.printing #guill{filter:brightness(2.1)}
+.serif{font-family:'Instrument Serif',serif}
+button{font-family:inherit}
+
+/* ---------- INTRO ---------- */
+#intro{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+.in-wrap{max-width:660px;text-align:center;position:relative;z-index:1}
+.seal{width:150px;height:150px;margin:0 auto 26px;display:block}
+.seal .rotor{animation:spin 48s linear infinite;transform-origin:100px 100px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.in-kicker{font-size:10.5px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.in-title{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(44px,8vw,74px);line-height:1.02;color:var(--paper);margin:14px 0 6px}
+.in-title em{color:var(--green);font-style:italic}
+.in-sub{font-size:12px;color:var(--dim);letter-spacing:.06em;margin-bottom:30px}
+.in-stats{display:flex;justify-content:center;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);margin-bottom:26px}
+.in-stats>div{padding:16px 22px;flex:1;max-width:210px}
+.in-stats>div+div{border-left:1px solid var(--line)}
+.in-stats b{display:block;font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;color:var(--paper)}
+.in-stats span{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.in-rules{text-align:left;font-size:12px;line-height:1.7;color:#9db8a7;margin:0 auto 30px;max-width:520px;list-style:none}
+.in-rules li{padding-left:20px;position:relative;margin-bottom:9px}
+.in-rules li::before{content:"—";position:absolute;left:0;color:var(--green)}
+#startBtn{background:transparent;border:1px solid var(--green);color:var(--green);font-family:'Instrument Serif',serif;font-style:italic;font-size:21px;padding:14px 44px;cursor:pointer;letter-spacing:.03em;transition:.18s}
+#startBtn:hover{background:var(--green);color:#07110b}
+
+/* ---------- JUEGO ---------- */
+#game{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:18px 18px 96px;display:none}
+header{display:flex;align-items:stretch;border:1px solid var(--line2);background:rgba(13,19,16,.72);margin-bottom:-1px}
+header>div{padding:12px 18px}
+.h-id{flex:1;display:flex;flex-direction:column;justify-content:center;font-size:10px;letter-spacing:.22em;color:var(--dim)}
+.h-id b{color:var(--ink);font-weight:600;letter-spacing:.14em;font-size:11.5px}
+.h-date{border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;min-width:150px}
+.h-date b{font-family:'Instrument Serif',serif;font-weight:400;font-size:26px;color:var(--paper);display:block;line-height:1.1}
+.h-date span{font-size:9px;letter-spacing:.2em;color:var(--dim)}
+.h-m2,.h-seign{display:flex;flex-direction:column;justify-content:center;min-width:150px}
+.h-m2{border-left:1px solid var(--line)}
+.h-seign{border-left:1px solid var(--line)}
+.h-m2 b,.h-seign b{font-size:16px;font-weight:600;color:var(--green);display:block}
+.h-m2 span,.h-seign span{font-size:9px;letter-spacing:.14em;color:var(--dim)}
+
+.wrap{display:grid;grid-template-columns:1fr 336px;border:1px solid var(--line2);background:rgba(13,19,16,.72)}
+.left{border-right:1px solid var(--line);min-width:0}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;padding:10px 16px 8px;border-bottom:1px solid var(--line)}
+.sec-head h2{font-size:10px;font-weight:600;letter-spacing:.24em;color:var(--dim)}
+.sec-head span{font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
+.sec-head span i{font-style:normal;color:var(--red)}
+.chartBox{height:330px;border-bottom:1px solid var(--line)}
+#chart{width:100%;height:100%;display:block}
+#ledger{max-height:158px;overflow-y:auto}
+.led{display:flex;gap:14px;padding:7px 16px;border-bottom:1px solid var(--line);font-size:11.5px;line-height:1.5}
+.led b{color:var(--gold);font-weight:600;white-space:nowrap}
+.led span{color:#a9c4b3}
+.led-empty{padding:16px;font-size:11px;color:var(--dim);font-style:italic}
+
+/* medidores */
+.right{display:flex;flex-direction:column}
+.gauge{padding:11px 16px 13px;border-bottom:1px solid var(--line);flex:1;display:flex;flex-direction:column;justify-content:center}
+.gauge:last-child{border-bottom:none}
+.g-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.g-label{font-size:9.5px;letter-spacing:.16em;color:var(--dim)}
+.g-val{font-family:'Instrument Serif',serif;font-size:23px;color:var(--paper);font-variant-numeric:tabular-nums}
+.g-val small{font-size:13px;color:var(--dim)}
+.g-bar{position:relative;height:3px;background:rgba(150,210,175,.1);margin-bottom:6px}
+.g-bar i{position:absolute;left:0;top:0;bottom:0;transition:width .7s cubic-bezier(.2,.8,.2,1),background .4s}
+.g-bar u{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--red);opacity:.75}
+.g-foot{display:flex;justify-content:space-between;font-size:9.5px;color:var(--dim)}
+.g-delta{opacity:0;transition:opacity .4s;font-size:9.5px}
+.g-delta.on{opacity:1}
+.g-delta.up{color:var(--green)} .g-delta.down{color:var(--red)}
+
+/* controles */
+.controls{display:grid;grid-template-columns:1.25fr .8fr auto;border:1px solid var(--line2);border-top:none;background:rgba(13,19,16,.85)}
+.ct{padding:16px 20px}
+.ct+.ct{border-left:1px solid var(--line)}
+.ct-label{font-size:9.5px;letter-spacing:.2em;color:var(--dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
+.ct-label b{font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;color:var(--paper);letter-spacing:0}
+.sliderRow{display:flex;align-items:center;gap:14px}
+#qe{flex:1;-webkit-appearance:none;appearance:none;height:28px;background:transparent;cursor:pointer}
+#qe::-webkit-slider-runnable-track{height:2px;background:rgba(150,210,175,.28)}
+#qe::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:28px;background:var(--bg);border:1px solid var(--green);margin-top:-13px;cursor:grab}
+#qe::-moz-range-track{height:2px;background:rgba(150,210,175,.28)}
+#qe::-moz-range-thumb{width:13px;height:28px;background:var(--bg);border:1px solid var(--green);border-radius:0;cursor:grab}
+.ticks{height:5px;margin-top:2px;background-image:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px calc(100%/24))}
+.qe-marks{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:4px}
+.rateRow{display:flex;align-items:center;gap:16px}
+.rateBtn{width:38px;height:38px;background:transparent;border:1px solid var(--line2);color:var(--green);font-size:19px;cursor:pointer;transition:.15s;line-height:1}
+.rateBtn:hover{border-color:var(--green);background:rgba(87,201,131,.08)}
+.rateBtn:disabled{opacity:.25;cursor:default}
+#runBtn{align-self:stretch;margin:16px 20px;padding:0 40px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:'Instrument Serif',serif;font-style:italic;font-size:21px;cursor:pointer;transition:.18s;white-space:nowrap}
+#runBtn:hover:not(:disabled){background:var(--green);color:#07110b}
+#runBtn:disabled{opacity:.35;cursor:wait}
+
+#printFlash{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:8;background:rgba(10,16,13,.94);border:1px solid var(--green);padding:10px 22px;font-size:12px;letter-spacing:.1em;color:var(--green);opacity:0;pointer-events:none;transition:opacity .3s}
+#printFlash.on{opacity:1}
+#printFlash b{font-family:'Instrument Serif',serif;font-size:19px;font-weight:400;color:var(--paper)}
+
+/* ticker */
+#ticker{position:fixed;left:0;right:0;bottom:0;height:34px;border-top:1px solid var(--line2);background:rgba(9,13,11,.95);overflow:hidden;z-index:6}
+#tkTrack{position:absolute;top:0;left:0;white-space:nowrap;line-height:34px;font-size:11px;color:#9db8a7;will-change:transform}
+#tkTrack b{color:var(--green);font-weight:500}
+.tk-sep{color:var(--gold);margin:0 14px}
+
+/* modal */
+#modal{position:fixed;inset:0;z-index:30;background:rgba(5,8,7,.8);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px}
+#modal.on{display:flex}
+.card{width:min(620px,94vw);max-height:90vh;overflow-y:auto;border:1px solid var(--line2);background:var(--panel);animation:cardIn .3s cubic-bezier(.2,.9,.3,1)}
+@keyframes cardIn{from{transform:translateY(16px);opacity:0}}
+.c-head{display:flex;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--line);font-size:9.5px;letter-spacing:.2em;color:var(--dim)}
+.c-head b{color:var(--gold);font-weight:600}
+.c-body{padding:24px 26px 26px}
+.c-title{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:31px;line-height:1.1;color:var(--paper);margin-bottom:14px}
+.c-text{font-size:12.5px;line-height:1.8;color:#a9c4b3;margin-bottom:20px}
+.c-text b{color:var(--paper);font-weight:500}
+.c-text .rg{color:var(--green)} .c-text .rr{color:var(--red)} .c-text .ro{color:var(--gold)}
+.opt{display:block;width:100%;text-align:left;background:transparent;border:1px solid var(--line2);color:var(--ink);padding:12px 15px;margin-top:10px;cursor:pointer;font-size:12.5px;transition:.15s}
+.opt:hover{border-color:var(--green);background:rgba(87,201,131,.07)}
+.opt .hint{display:block;font-size:10.5px;color:var(--dim);margin-top:5px;line-height:1.5}
+
+/* fin */
+#end{position:fixed;inset:0;z-index:45;background:rgba(7,10,9,.96);display:none;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#end.on{display:flex}
+.end-wrap{max-width:620px;width:100%}
+.end-kicker{font-size:10px;letter-spacing:.32em;color:var(--dim);text-align:center}
+.end-title{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(38px,7vw,62px);text-align:center;line-height:1.05;margin:12px 0 18px}
+.end-body{font-size:13px;line-height:1.85;color:#a9c4b3;text-align:center;margin-bottom:26px}
+.end-stats{border-top:1px solid var(--line2)}
+.end-stats .led{font-size:12px;padding:9px 4px}
+.end-stats .led b{color:var(--paper)}
+#againBtn{display:block;margin:28px auto 0;background:transparent;border:1px solid var(--green);color:var(--green);font-family:'Instrument Serif',serif;font-style:italic;font-size:19px;padding:12px 38px;cursor:pointer;transition:.18s}
+#againBtn:hover{background:var(--green);color:#07110b}
+
+@media(max-width:960px){
+  .wrap{grid-template-columns:1fr}
+  .left{border-right:none;border-bottom:1px solid var(--line)}
+  .controls{grid-template-columns:1fr}
+  .ct+.ct{border-left:none;border-top:1px solid var(--line)}
+  #runBtn{margin:16px 20px;padding:14px}
+  header{flex-wrap:wrap}
+  .h-date{order:-1;width:100%;border-right:none;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<canvas id="guill"></canvas>
+
+<!-- ============ INTRO ============ -->
+<div id="intro">
+  <div class="in-wrap">
+    <svg class="seal" viewBox="0 0 200 200" aria-hidden="true">
+      <defs><path id="cir" d="M100,100 m-73,0 a73,73 0 1,1 146,0 a73,73 0 1,1 -146,0"/></defs>
+      <circle cx="100" cy="100" r="97" fill="none" stroke="rgba(150,210,175,.4)" stroke-width="1"/>
+      <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(150,210,175,.35)" stroke-width="1" stroke-dasharray="2 3.5"/>
+      <g class="rotor">
+        <text font-size="11" letter-spacing="2.6" fill="#8fb89f" font-family="IBM Plex Mono,monospace">
+          <textPath href="#cir">RESERVA FEDERAL ◆ SIMULADOR DE HEGEMONÍA ◆ 2020 — 2030 ◆ LA IMPRENTA ES UN ARMA ◆</textPath>
+        </text>
+      </g>
+      <circle cx="100" cy="100" r="57" fill="none" stroke="rgba(150,210,175,.35)" stroke-width="1"/>
+      <text x="100" y="121" text-anchor="middle" font-size="56" fill="#eaf4ec" font-family="Instrument Serif,serif" font-style="italic">$</text>
+    </svg>
+    <div class="in-kicker">Washington · Sala de operaciones del FOMC</div>
+    <h1 class="in-title">El Juego de <em>los Bonos</em></h1>
+    <div class="in-sub">TÚ ERES LA RESERVA FEDERAL · DIEZ AÑOS PARA DEFENDER (O PERDER) EL DÓLAR</div>
+    <div class="in-stats">
+      <div><b>$4,8 B</b><span>creados 2020–22</span></div>
+      <div><b>+40%</b><span>masa monetaria M2</span></div>
+      <div><b>71→58%</b><span>reservas mundiales</span></div>
+    </div>
+    <ul class="in-rules">
+      <li>Cada trimestre decides <b>cuánto imprimir</b> para comprar bonos del Tesoro y <b>a qué tasa</b> prestar.</li>
+      <li>La línea verde es tu imperio: el peso del dólar en las reservas del planeta. Si cae del <b>45%</b>, el mundo deja de demandar tu deuda: fin del imprimir gratis.</li>
+      <li>Todo golpea dos veces: dentro de tus fronteras… y en el resto del mundo, que paga tu factura.</li>
+    </ul>
+    <button id="startBtn">Asumir la presidencia</button>
+  </div>
+</div>
+
+<!-- ============ JUEGO ============ -->
+<div id="game">
+  <header>
+    <div class="h-id"><b>SISTEMA DE LA RESERVA FEDERAL</b>COMITÉ FEDERAL DE MERCADO ABIERTO · TURNO DEL JUGADOR</div>
+    <div class="h-date"><b id="hDate">2020 · T1</b><span>TRIMESTRE EN CURSO</span></div>
+    <div class="h-m2"><b id="hM2">+0,0%</b><span>M2 DESDE 2020</span></div>
+    <div class="h-seign"><b id="hSeign">0 M$</b><span>SEÑOREAJE GLOBAL</span></div>
+  </header>
+
+  <div class="wrap">
+    <section class="left">
+      <div class="sec-head">
+        <h2>EL PESO DEL DÓLAR EN LAS RESERVAS MUNDIALES</h2>
+        <span>Umbral de colapso: <i>45%</i> · referencia histórica: 58% (2024)</span>
+      </div>
+      <div class="chartBox"><canvas id="chart"></canvas></div>
+      <div class="sec-head"><h2>COSTOS DEL MUNDO — REGISTRO DE HECHOS</h2><span>lo que tu política hace fuera de Washington</span></div>
+      <div id="ledger"></div>
+    </section>
+    <aside class="right" id="gauges"></aside>
+  </div>
+
+  <div class="controls">
+    <div class="ct">
+      <div class="ct-label"><span>FLEXIBILIZACIÓN CUANTITATIVA — COMPRA DE BONOS DEL TESORO</span><b id="qeVal">$300 B / trim</b></div>
+      <div class="sliderRow"><input type="range" id="qe" min="0" max="800" step="25" value="300"></div>
+      <div class="ticks"></div>
+      <div class="qe-marks"><span>0</span><span>200</span><span>400</span><span>600</span><span>800 B$</span></div>
+    </div>
+    <div class="ct">
+      <div class="ct-label"><span>TASA DE INTERÉS DE REFERENCIA</span><b id="rateVal">0,25%</b></div>
+      <div class="rateRow">
+        <button class="rateBtn" id="rateDown">−</button>
+        <button class="rateBtn" id="rateUp">+</button>
+        <div style="font-size:10px;line-height:1.6;color:var(--dim)">Paso: 0,25 pp<br>Tasas altas enfrían precios…<br>y asfixian al mundo.</div>
+      </div>
+    </div>
+    <button id="runBtn">Cerrar el trimestre</button>
+  </div>
+</div>
+
+<div id="printFlash">CREANDO ELECTRÓNICAMENTE <b id="pfNum">$0 M</b></div>
+<div id="ticker"><div id="tkTrack"></div></div>
+
+<!-- ============ MODAL ============ -->
+<div id="modal"><div class="card">
+  <div class="c-head"><b>MEMORÁNDUM CONFIDENCIAL · FOMC</b><span id="cDate"></span></div>
+  <div class="c-body">
+    <div class="c-title" id="cTitle"></div>
+    <div class="c-text" id="cText"></div>
+    <div id="cOpts"></div>
+  </div>
+</div></div>
+
+<!-- ============ FIN ============ -->
+<div id="end"><div class="end-wrap">
+  <div class="end-kicker" id="endKick">INFORME FINAL · SIMULACIÓN TERMINADA</div>
+  <div class="end-title" id="endTitle"></div>
+  <div class="end-body" id="endBody"></div>
+  <div class="end-stats" id="endStats"></div>
+  <button id="againBtn">Reiniciar la simulación</button>
+</div></div>
+
+<script>
+/* ================= UTILIDADES ================= */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const fmt=n=>Math.round(n).toLocaleString('es-ES');
+const dec=(n,d=1)=>n.toFixed(d).replace('.',',');
+const yearOf=q=>2020+Math.floor(q/4), trimOf=q=>(q%4)+1;
+
+/* ================= GUILLOCHE DE FONDO ================= */
+const guill=$('guill');
+function drawGuilloche(){
+  guill.width=innerWidth; guill.height=innerHeight;
+  const x=guill.getContext('2d');
+  x.clearRect(0,0,guill.width,guill.height);
+  x.strokeStyle='rgba(110,190,150,.05)'; x.lineWidth=1;
+  const H=guill.height;
+  for(let i=0;i<26;i++){
+    x.beginPath();
+    for(let px=0;px<=guill.width;px+=6){
+      const py=H*.5+Math.sin(px*.004+i*.22)*Math.cos(px*.0013-i*.05)*(H*.44)+Math.sin(px*.008+i)*36;
+      px===0?x.moveTo(px,py):x.lineTo(px,py);
+    }
+    x.stroke();
+  }
+  const rosette=(cx,cy,R,n)=>{ for(let i=0;i<n;i++){ x.beginPath(); x.ellipse(cx,cy,R,R*.34,i*Math.PI/n,0,Math.PI*2); x.stroke(); } };
+  rosette(guill.width-130,120,95,34);
+  rosette(130,H-140,75,28);
+}
+drawGuilloche(); addEventListener('resize',drawGuilloche);
+
+/* ================= ESTADO ================= */
+const N_TURNS=44; // 2020T1 → 2030T4
+const S={
+  q:0, rate:.25, infl:.4, econ:68, share:60.2,
+  gold:0, goldFlow:0, emerg:14, paxa:0, printed:0,
+  froze:false, transitory:false, forced:0, inflOver:0,
+  defaults:0, usedCountries:[], busy:false
+};
+const live=[60.2]; // historia viva del dólar
+const prev={infl:.4,econ:68,share:60.2,gold:0,emerg:14,paxa:0};
+
+/* historial real aproximado (FMI · COFER) */
+const PREHIST=[[2000,71.1],[2002,68.9],[2004,65.6],[2006,66.2],[2008,63.9],[2010,62.2],[2012,61.4],[2014,63.9],[2016,65.4],[2018,61.7],[2020,60.2]];
+
+/* ================= GRÁFICO ================= */
+const chart=$('chart'), cx=chart.getContext('2d');
+let animT=1, animFrom=0, animTo=0, rafOn=false;
+function sizeChart(){
+  const r=chart.parentElement.getBoundingClientRect(), d=devicePixelRatio||1;
+  chart.width=r.width*d; chart.height=r.height*d; cx.setTransform(d,0,0,d,0,0);
+  drawChart();
+}
+const PADL=44,PADR=76,PADT=18,PADB=26, Y0=42,Y1=74, A0=1999.4,A1=2030.9;
+const X=a=>PADL+(a-A0)/(A1-A0)*(chart.clientWidth-PADL-PADR);
+const Y=v=>PADT+(Y1-v)/(Y1-Y0)*(chart.clientHeight-PADT-PADB);
+
+function drawChart(){
+  const W=chart.clientWidth,H=chart.clientHeight;
+  cx.clearRect(0,0,W,H);
+  cx.font='10px "IBM Plex Mono"'; 
+  /* rejilla horizontal */
+  for(let v=45;v<=70;v+=5){
+    cx.strokeStyle='rgba(150,210,175,.07)'; cx.beginPath(); cx.moveTo(PADL,Y(v)); cx.lineTo(W-PADR,Y(v)); cx.stroke();
+    cx.fillStyle='#5c7568'; cx.textAlign='right'; cx.fillText(v+'%',PADL-7,Y(v)+3);
+  }
+  /* años */
+  cx.textAlign='center';
+  for(let a=2000;a<=2030;a+=5){ cx.fillStyle='#5c7568'; cx.fillText(a,X(a),H-9); }
+  /* umbral de colapso */
+  cx.strokeStyle='rgba(224,101,85,.65)'; cx.setLineDash([5,4]);
+  cx.beginPath(); cx.moveTo(PADL,Y(45)); cx.lineTo(W-PADR,Y(45)); cx.stroke();
+  cx.fillStyle='#e06555'; cx.textAlign='left'; cx.fillText('COLAPSO',W-PADR+6,Y(45)+3);
+  /* referencia 58% */
+  cx.strokeStyle='rgba(150,210,175,.3)';
+  cx.beginPath(); cx.moveTo(PADL,Y(58)); cx.lineTo(W-PADR,Y(58)); cx.stroke();
+  cx.fillStyle='#7d9a89'; cx.fillText('58% · 2024',W-PADR+6,Y(58)+3);
+  cx.setLineDash([]);
+  /* historia 2000-2020 */
+  cx.strokeStyle='rgba(150,210,175,.35)'; cx.lineWidth=1.2; cx.beginPath();
+  PREHIST.forEach((p,i)=>{ const px=X(p[0]),py=Y(p[1]); i?cx.lineTo(px,py):cx.moveTo(px,py); });
+  cx.stroke();
+  /* línea viva */
+  const n=live.length; if(!n)return;
+  cx.strokeStyle='#57c983'; cx.lineWidth=2; cx.beginPath();
+  cx.moveTo(X(2020),Y(live[0]));
+  for(let i=1;i<n-1;i++) cx.lineTo(X(2020+i*.25),Y(live[i]));
+  const lastY = n>1 ? animFrom+(animTo-animFrom)*ease(animT) : live[0];
+  cx.lineTo(X(2020+(n-1)*.25),Y(lastY)); cx.stroke();
+  /* puntos por trimestre */
+  cx.fillStyle='#57c983';
+  for(let i=0;i<n-1;i++){ cx.beginPath(); cx.arc(X(2020+i*.25),Y(live[i]),2,0,7); cx.fill(); }
+  cx.beginPath(); cx.arc(X(2020+(n-1)*.25),Y(lastY),3.4,0,7); cx.fill();
+  /* etiqueta del valor vivo */
+  cx.font='italic 23px "Instrument Serif"'; cx.fillStyle='#eaf4ec';
+  cx.shadowColor='#0a0e0c'; cx.shadowBlur=8;
+  const lx=X(2020+(n-1)*.25), ly=Y(lastY);
+  cx.textAlign = lx>W-150?'right':'left';
+  cx.fillText(dec(lastY,1)+'%', lx+(lx>W-150?-12:12), ly-10);
+  cx.shadowBlur=0;
+}
+const ease=t=>1-Math.pow(1-t,3);
+function animateChart(){
+  if(live.length<2)return drawChart();
+  animT=0; animFrom=live[live.length-2]; animTo=live[live.length-1];
+  if(rafOn)return; rafOn=true;
+  (function step(){ animT+=.028; drawChart();
+    if(animT<1)requestAnimationFrame(step); else {rafOn=false;} })();
+}
+addEventListener('resize',sizeChart);
+
+/* ================= MEDIDORES ================= */
+const GAUGES=[
+ {k:'share',label:'DÓLAR EN RESERVAS MUNDIALES',min:40,max:72,good:'up',mark:(45-40)/(72-40),f:v=>dec(v,1)+'<small> %</small>'},
+ {k:'infl',label:'INFLACIÓN EE. UU.',min:0,max:14,good:'down',mark:3.5/14,f:v=>dec(v,1)+'<small> %</small>'},
+ {k:'econ',label:'ECONOMÍA INTERNA',min:0,max:100,good:'up',f:v=>dec(v,0)+'<small> /100</small>'},
+ {k:'emerg',label:'RIESGO DE DEUDA EMERGENTE',min:0,max:100,good:'down',mark:.92,f:v=>dec(v,0)+'<small> /100</small>'},
+ {k:'gold',label:'ORO COMPRADO POR BANCOS CENTRALES',min:0,max:2800,good:'down',f:v=>fmt(v)+'<small> t</small>'},
+ {k:'paxa',label:'SEÑOREAJE GLOBAL ACUMULADO',min:0,max:900,good:'up',f:v=>fmt(v)+'<small> M$</small>'}
+];
+function buildGauges(){
+  $('gauges').innerHTML=GAUGES.map(g=>`
+   <div class="gauge">
+     <div class="g-top"><span class="g-label">${g.label}</span><span class="g-val" id="v_${g.k}"></span></div>
+     <div class="g-bar"><i id="b_${g.k}"></i>${g.mark!=null?`<u style="left:${g.mark*100}%"></u>`:''}</div>
+     <div class="g-foot"><span id="n_${g.k}"></span><span class="g-delta" id="d_${g.k}"></span></div>
+   </div>`).join('');
+}
+function barColor(k,v){
+  if(k==='infl')return v<3.5?'var(--green)':v<6.5?'var(--gold)':'var(--red)';
+  if(k==='econ')return v>55?'var(--green)':v>30?'var(--gold)':'var(--red)';
+  if(k==='emerg')return v<45?'var(--green)':v<75?'var(--gold)':'var(--red)';
+  if(k==='share')return v>55?'var(--green)':v>45?'var(--gold)':'var(--red)';
+  return k==='gold'?'var(--gold)':'var(--green)';
+}
+const NOTES={
+  share:v=>v<45?'sin compradores de deuda':v<53?'demanda decreciente':v<58?'dominio firme':'hegemonía plena',
+  infl:v=>v<2.5?'ancla de precios ok':v<6.5?'los salarios pierden':'crisis de coste vital',
+  econ:v=>v>60?'empleo y crédito sanos':v>35?'enfriamiento':v>15?'recesión':'depresión',
+  emerg:v=>v>85?'impagos inminentes':v>60?'fuga de capitales':v>30?'tensión cambiaria':'estabilidad',
+  gold:()=>'activo incongelable',
+  paxa:()=>'el mundo paga por usar el dólar'
+};
+function updateGauges(animated=true){
+  GAUGES.forEach(g=>{
+    const v=S[g.k], pv=prev[g.k];
+    const el=$('v_'+g.k); el.innerHTML=g.f(v);
+    $('b_'+g.k).style.width=clamp((v-g.min)/(g.max-g.min)*100,0,100)+'%';
+    $('b_'+g.k).style.background=barColor(g.k,v);
+    $('n_'+g.k).textContent=NOTES[g.k](v);
+    const d=$('d_'+g.k), diff=v-pv;
+    if(animated && Math.abs(diff)>.001){
+      const good=g.good==='up'?diff>0:diff<0;
+      d.textContent=(diff>0?'▲ +':'▼ ')+dec(diff,1);
+      d.className='g-delta on '+(good?'up':'down');
+      clearTimeout(d._t); d._t=setTimeout(()=>d.classList.remove('on'),2600);
+    }
+  });
+  $('hM2').textContent='+'+dec(S.printed/12000*40,1)+'%';
+  $('hSeign').textContent=fmt(S.paxa)+' M$';
+  $('hDate').textContent=yearOf(S.q)+' · T'+trimOf(S.q);
+  $('rateVal').textContent=dec(S.rate,2)+'%';
+  $('rateDown').disabled=S.rate<=0; $('rateUp').disabled=S.rate>=8;
+}
+
+/* ================= TICKER ================= */
+let tkItems=['Bienvenido al FOMC. La imprenta está bajo tu responsabilidad.'];
+function rebuildTicker(){
+  const html=tkItems.slice(-14).map(t=>`<b>FED</b> ${t}`).join('<span class="tk-sep">◆</span>');
+  $('tkTrack').innerHTML=html+'<span class="tk-sep">◆</span>'+html;
+  tkX=0;
+}
+let tkX=0;
+(function tkLoop(){
+  const tr=$('tkTrack');
+  if(tr.scrollWidth){ const w=tr.scrollWidth/2; tkX-=.65; if(tkX<=-w)tkX+=w; tr.style.transform=`translateX(${tkX}px)`; }
+  requestAnimationFrame(tkLoop);
+})();
+function pushNews(arr){ tkItems.push(...arr); rebuildTicker(); }
+
+/* ================= REGISTRO ================= */
+function addLedger(year,text){
+  const el=document.createElement('div'); el.className='led';
+  el.innerHTML=`<b>${year}</b><span>${text}</span>`;
+  const L=$('ledger'); const e=L.querySelector('.led-empty'); if(e)e.remove();
+  L.prepend(el);
+}
+
+/* ================= EVENTOS ================= */
+const fired=new Set();
+function opts(list){
+  $('cOpts').innerHTML='';
+  list.forEach(o=>{
+    const b=document.createElement('button'); b.className='opt';
+    b.innerHTML=`${o.t}<span class="hint">${o.h}</span>`;
+    b.onclick=()=>{ o.f&&o.f(); closeModal(); };
+    $('cOpts').appendChild(b);
+  });
+}
+function showEvent(e){
+  $('cDate').textContent=yearOf(S.q)+' · T'+trimOf(S.q);
+  $('cTitle').innerHTML=e.title; $('cText').innerHTML=e.body;
+  opts(e.opts); $('modal').classList.add('on');
+}
+function closeModal(){ $('modal').classList.remove('on'); if(!ended)S.busy=false; }
+
+const SCRIPT=[
+ {id:'covid',q:0,title:'Marzo de 2020 — El mundo se detiene',
+  body:`Los mercados se desploman un <b>34%</b> y el crédito se congela. Wall Street exige liquidez ilimitada; la economía real entra en paro técnico. La imprenta está encendida: cada dólar creado <b>electrónicamente</b> para comprar bonos del Tesoro diluirá el valor de todos los dólares ya existentes. Decide tu primer movimiento.`,
+  opts:[
+   {t:'Flexibilización cuantitativa ilimitada',h:'Fija la compra de bonos en 450 B$ por trimestre · sostiene la economía · dispara la masa monetaria',
+    f:()=>{ $('qe').value=450; setQELabel(); S.econ=clamp(S.econ+6,0,100); pushNews(['QE ilimitado: la FED compra bonos sin techo']); }},
+   {t:'Actuar con cautela',h:'Fija la compra en 120 B$ por trimestre · menos inflación futura · recuperación más lenta',
+    f:()=>{ $('qe').value=120; setQELabel(); S.econ=clamp(S.econ+1,0,100); pushNews(['La FED apenas alivia: los mercados gruñen']); }}
+  ]},
+ {id:'fao',q:4,title:'El hambre llega primero',
+  body:`La FAO registra un alza de <b class='ro'>+27,3%</b> en su índice de alimentos: aceite de palma <b>+65%</b>, trigo <b>+31%</b>, maíz <b>+44%</b>. Como las materias primas se cotizan en dólares, tu expansión ya es <b>inflación importada</b> en América Latina — antes de que Washington admita que existe un problema.`,
+  opts:[{t:'Tomar nota',h:'Choque de precios: inflación +1,0 pp',
+   f:()=>{ addLedger(2021,'FAO: alimentos +27,3% · palma +65% · trigo +31% · maíz +44%'); }}]},
+ {id:'transitory',q:6,cond:()=>S.infl>4.2,title:'¿Transitorio?',
+  body:`La inflación interna supera el <b>5%</b> y tu discurso oficial sigue hablando de factores <i>transitorios</i>. Los mercados empiezan a dudar de tu ancla de precios. Si te equivocas, las expectativas se desanclan y el dólar paga la factura.`,
+  opts:[
+   {t:'Admitir el problema y empezar a subir',h:'Tasa +0,50 pp · recuperas credibilidad · frenas la recuperación',
+    f:()=>{ S.rate=clamp(S.rate+.5,0,8); pushNews(['La FED admite el error: fin del relato transitorio']); }},
+   {t:'Mantener el relato «transitorio»',h:'Las expectativas se desanclan: inflación +1,6 pp · erosión extra del dólar',
+    f:()=>{ S.infl+=1.6; S.transitory=true; pushNews(['La FED insiste: la inflación «es transitoria»']); }}
+  ]},
+ {id:'russia',q:8,title:'El arma',
+  body:`La guerra abre la puerta a una medida sin precedentes: congelar <b>300.000 millones de dólares</b> de las reservas soberanas del Banco Central de Rusia. Funcionará a corto plazo. Pero enviará un mensaje a cada banco central del planeta: <b>tus reservas en dólares solo están seguras si estás alineado con Washington.</b>`,
+  opts:[
+   {t:'Congelar las reservas rusas',h:'Ganancia política inmediata · compras récord de oro (+165 t/trim) · erosión estructural del dólar',
+    f:()=>{ S.froze=true; S.econ=clamp(S.econ+3,0,100); addLedger(2022,'Occidente congela 300.000 M$ de reservas soberanas de Rusia'); pushNews(['Bancos centrales de medio mundo piden repatriar su oro']); }},
+   {t:'No cruzar esa línea',h:'Preservas la confianza en el sistema · presión política interna (economía −5)',
+    f:()=>{ S.econ=clamp(S.econ-5,0,100); pushNews(['Washington resiste la tentación del arma financiera']); }}
+  ]},
+ {id:'hikes',q:10,cond:()=>S.infl>6,title:'El invierno del dinero',
+  body:`La inflación ronda el <b class='rr'>9%</b> y el mercado exige un sendero agresivo hacia el <b>5,25%</b>. La corrección golpeará a los débiles: los capitales abandonarán los mercados emergentes para refugiarse en tu Tesoro.`,
+  opts:[
+   {t:'Subidas agresivas hasta estrangular la inflación',h:'Tasa fijada en 4,25% y escalada forzada hasta 5,25% · mata la inflación · asfixia a la periferia',
+    f:()=>{ S.rate=Math.max(S.rate,4.25); S.forced=4; addLedger(2022,'La FED lanza su ciclo de subidas más agresivo en décadas'); }},
+   {t:'Gradualismo',h:'Menos recesión interna · la inflación persiste y el dólar se erosiona más rápido',
+    f:()=>{ S.transitory=true; pushNews(['La FED duda: el mercado castiga la deuda americana']); }}
+  ]},
+ {id:'petro',q:12,title:'Grietas en el petrodólar',
+  body:`El acuerdo de <b>1974</b> con Arabia Saudita se resquebraja: Riad acepta vender crudo a China <b>en yuanes</b>, India paga a Emiratos <b>en rupias</b> y Rusia liquida con China e India en rublos y yuanes. Cincuenta años de petrodólar empiezan a filtrarse.`,
+  opts:[{t:'Tomar nota',h:'El dólar cede −0,7 pp de reservas mundiales',
+   f:()=>{ S.share-=.7; addLedger(2023,'Arabia Saudita factura crudo en yuanes · India paga en rupias'); }}]},
+ {id:'mirror',q:16,title:'El espejo',
+  body:`El dólar cae al <b>58%</b> de las reservas mundiales: 13 puntos menos que en el año 2000. Y lo más inquietante: la diversificación <b>no</b> migra al euro ni al yuan, sino a monedas no tradicionales de países estables — dólar australiano y canadiense, won coreano, dólar de Singapur, franco suizo.`,
+  opts:[{t:'Continuar',h:'Tu gestión puede estar por encima… o por debajo de este número',
+   f:()=>{ S.share=Math.min(S.share,58.4); }}]},
+ {id:'sips',q:19,title:'El mundo de repuesto',
+  body:`El sistema de pagos transfronterizos de China conecta ya <b>3.000 instituciones en más de 100 países</b>. Cada vez que usas el dólar como arma, otro banco central pide acceso. Las alternativas no se construyen contra ti: se construyen <b>gracias a ti</b>.`,
+  opts:[{t:'Continuar',h:'El dólar cede −0,5 pp',
+   f:()=>{ S.share-=.5; addLedger(2024,'SIPS conecta 3.000 instituciones financieras en +100 países'); }}]}
+];
+
+const POOL=[
+ {id:'rescue',cond:()=>S.emerg>62,title:'El teléfono suena a las 3 a.m.',
+  body:()=>{const p=pickCountry(); S._c=p; return `Un banco central emergente —<b>${p}</b>— está a horas del impago. Su deuda, emitida en dólares durante la era del dinero barato, se ha vuelto impagable con el dólar fuerte. Si cae, el contagio salpicará tu sistema. Si lo rescatas, reafirmarás por qué el mundo aún necesita tu moneda.`;},
+  opts:[
+   {t:'Abrir línea de swaps: rescatarlo',h:'El dólar reafirma su papel (+0,7 pp) · infla tu economía (+0,3 pp inflación) · economía interna −3',
+    f:()=>{ S.share+=.7; S.infl+=.3; S.econ=clamp(S.econ-3,0,100); S.emerg-=26; addLedger(yearOf(S.q),`La FED rescata a ${S._c} con línea de swaps`); }},
+   {t:'Dejarlo caer',h:'Default soberano: dólar −0,9 pp · el riesgo emergente se enfría',
+    f:()=>{ S.share-=.9; S.emerg-=26; S.defaults++; addLedger(yearOf(S.q),`Default soberano: ${S._c} — la deuda en dólares se vuelve impagable`); }}
+  ]},
+ {id:'auction',cond:()=>S.share<53&&S.q>=24,title:'La subasta tensionada',
+  body:`El Tesoro no coloca toda su deuda: <b>la demanda automática internacional ya no existe</b>. Las tasas que debes pagar para atraer compradores suben sin que tú lo decidas. El mercado ha empezado a fijar tu política monetaria.`,
+  opts:[{t:'No hay alternativa',h:'Tasa +0,50 pp impuesta por el mercado · economía −3',
+   f:()=>{ S.rate=clamp(S.rate+.5,0,8); S.econ=clamp(S.econ-3,0,100); addLedger(yearOf(S.q),'Una subasta del Tesoro no encuentra demanda suficiente'); }}]},
+ {id:'petroyuan',cond:()=>S.q>=27,title:'El petroyuan se consolida',
+  body:`Ya no es una anomalía: un tercio del crudo mundial se liquida fuera del dólar. Las barriletes de petróleo, como los billetes, han dejado de tener una sola cara.`,
+  opts:[{t:'Continuar',h:'Dólar −0,8 pp',f:()=>{S.share-=.8; addLedger(yearOf(S.q),'Un tercio del crudo mundial ya se liquida fuera del dólar');}}]},
+ {id:'goldrec',cond:()=>S.goldFlow>250,title:'Compras récord de oro',
+  body:`Los bancos centrales repiten las <b>1.136 toneladas de 2022</b> y las 1.037 de 2023: buscan un activo que <b>nadie pueda congelar ni embargar políticamente</b>. El metal no pregunta por tu alineación geopolítica.`,
+  opts:[{t:'Continuar',h:'Dólar −0,4 pp',f:()=>{S.share-=.4;}}]},
+ {id:'brics',cond:()=>S.q>=31,title:'Cumbre de la periferia',
+  body:`Medio mundo firma acuerdos de comercio en monedas locales. No es una moneda única — es algo peor para ti: <b>muchas salidas pequeñas</b>, ninguna de las cuales controlas.`,
+  opts:[{t:'Continuar',h:'Dólar −0,6 pp',f:()=>{S.share-=.6; addLedger(yearOf(S.q),'Cumbre de la periferia: comercio creciente en monedas locales');}}]},
+ {id:'sterling',cond:()=>S.share<48,title:'La sombra de la libra',
+  body:`Tus analistas ponen sobre la mesa un precedente: la <b>libra esterlina</b> no se desplomó de golpe — hizo su salida gradual entre <b>1913 y 1944</b>. El límite llega cuando se pierde la demanda automática de la deuda. Estás cerca.`,
+  opts:[{t:'Última oportunidad',h:'Defiende la línea de colapso o caerás como Londres',f:()=>{}}]}
+];
+function pickCountry(){
+  const cs=['Sri Lanka','Ghana','Pakistán','Zambia','Surinam','Ecuador','Egipto','Kenia'];
+  const free=cs.filter(c=>!S.usedCountries.includes(c));
+  const c=free[Math.floor(Math.random()*free.length)]||cs[0];
+  S.usedCountries.push(c); return c;
+}
+function autoDefault(){
+  const c=pickCountry(); S.defaults++; S.emerg-=26; S.share-=1.0; S.econ=clamp(S.econ-1,0,100);
+  addLedger(yearOf(S.q),`Default soberano: ${c} — la deuda en dólares se vuelve impagable`);
+  pushNews([`IMPAGO: ${c} suspende pagos de su deuda denominada en dólares`]);
+}
+function fireEvents(){
+  const sc=SCRIPT.find(e=>e.q===S.q&&!fired.has(e.id)&&(!e.cond||e.cond()));
+  if(sc){ fired.add(sc.id); showEvent(sc); return; }
+  if(S.q>=21&&S.q%2===0){
+    const d=POOL.find(p=>!fired.has(p.id)&&(!p.cond||p.cond()));
+    if(d){ fired.add(d.id);
+      const body=typeof d.body==='function'?d.body():d.body;
+      showEvent({...d,body}); return; }
+  }
+  S.busy=false;
+}
+
+/* ================= CONTROLES ================= */
+function setQELabel(){ $('qeVal').textContent='$'+fmt(+$('qe').value)+' B / trim'; }
+ $('qe').addEventListener('input',setQELabel);
+ $('rateUp').onclick=()=>{ S.rate=clamp(+(S.rate+.25).toFixed(2),0,8); updateGauges(false); };
+ $('rateDown').onclick=()=>{ S.rate=clamp(+(S.rate-.25).toFixed(2),0,8); updateGauges(false); };
+
+/* ================= CIERRE DE TRIMESTRE ================= */
+function printFlash(){
+  const amt=+$('qe').value; if(amt<=0)return;
+  document.body.classList.add('printing');
+  $('printFlash').classList.add('on');
+  const t0=performance.now();
+  (function tw(t){ const p=Math.min(1,(t-t0)/750);
+    $('pfNum').textContent='$'+fmt(amt*p*(1/p*p))+' M'; // contador acelerado
+    $('pfNum').textContent='$'+fmt(amt*(p*p*.4+p*.6))+' M';
+    if(p<1)requestAnimationFrame(tw);
+    else setTimeout(()=>{ $('printFlash').classList.remove('on'); document.body.classList.remove('printing'); },500);
+  })(t0);
+}
+ $('runBtn').onclick=()=>{
+  if(S.busy)return; S.busy=true;
+  if(S.forced>0){ S.rate=clamp(+(S.rate+.25).toFixed(2),0,8); S.forced--; pushNews([`Escalada forzada por el mercado: tasa en ${dec(S.rate,2)}%`]); }
+  const print=+$('qe').value;
+  S.printed+=print; printFlash();
+
+  /* --- inflación --- */
+  let dInf=print/100*.5;
+  const gap=S.rate-S.infl;
+  dInf-=Math.max(0,gap)*.55;
+  dInf+=Math.min(0,gap)*.10;
+  const nq=S.q+1;
+  if(nq===1||nq===2)dInf-=2.4;      // colapso de demanda COVID
+  if(nq===5)dInf+=.9;               // choque de oferta 2021
+  if(nq===6)dInf+=.8;
+  if(nq===8)dInf+=1.4;              // guerra y energía
+  S.infl=clamp(S.infl+dInf,-.5,25);
+
+  /* --- economía interna --- */
+  let dE=print/100*1.6-Math.max(0,gap)*2.4-Math.max(0,S.infl-6)*1.6;
+  if(nq===8)dE-=6;
+  S.econ=clamp(S.econ+dE,0,100);
+
+  /* --- periferia emergente --- */
+  S.emerg=clamp(S.emerg+Math.max(0,S.rate-.25)*2.3-2.1,0,100);
+  if(S.emerg>92)autoDefault();
+
+  /* --- oro de bancos centrales --- */
+  S.goldFlow=112+Math.max(0,S.infl-2.5)*24+(S.froze?165:0)+rnd(-18,22);
+  S.gold+=S.goldFlow;
+
+  /* --- el dólar --- */
+  let dS=-.18;
+  dS-=Math.max(0,S.infl-2.5)*.13;
+  dS+=Math.min(.26,Math.max(0,S.rate-1)*.055);
+  dS+=(S.econ-64)*.004;
+  dS-=S.goldFlow/1400;
+  if(S.froze)dS-=.15;
+  if(S.transitory)dS-=.05;
+  S.share=clamp(S.share+dS,20,75);
+
+  /* --- señoreaje --- */
+  S.paxa+=(S.share/62)*18.75;
+
+  S.q++; live.push(S.share);
+  pushNews(newsFor(print));
+
+  animateChart(); updateGauges();
+
+  if(checkEnd())return;
+  setTimeout(()=>{ 
+    /* eventos con condiciones pos-cálculo */
+    const sc=SCRIPT.find(e=>e.q===S.q&&!fired.has(e.id)&&(!e.cond||e.cond()));
+    if(sc){fired.add(sc.id);showEvent(sc);return;}
+    if(S.q>=21&&S.q%2===0){
+      const d=POOL.find(p=>!fired.has(p.id)&&(!p.cond||p.cond()));
+      if(d){fired.add(d.id);const b=typeof d.body==='function'?d.body():d.body;showEvent({...d,body:b});return;}
+    }
+    S.busy=false;
+  },950);
+};
+
+function newsFor(print){
+  const out=[];
+  if(print>0)out.push(`La FED crea $${fmt(print)} M electrónicos y compra bonos del Tesoro`);
+  if(S.infl>8)out.push(`IPC +${dec(S.infl,1)}%: los salarios reales llevan meses cayendo`);
+  else if(S.infl>5)out.push(`Inflación en ${dec(S.infl,1)}%: «todavía no hemos visto el pico», admite la FED`);
+  if(S.emerg>70)out.push('CEPAL: la corrección ajena restará 1–2 pp de crecimiento a América Latina');
+  if(S.rate>4.5)out.push(`Con tasa en ${dec(S.rate,2)}%, los capitales huyen de los emergentes hacia el Tesoro americano`);
+  if(S.goldFlow>200)out.push(`Bancos centrales compran ${fmt(S.goldFlow)} t de oro este trimestre: quieren activos incongelables`);
+  if(S.froze)out.push('Los $300.000 M rusos siguen congelados: el mensaje recorre cada banco central del planeta');
+  if(S.share<53)out.push('Los gestores diversifican hacia won, dólar australiano, dólar de Singapur y franco suizo');
+  out.push(`Señoreaje del trimestre: +$${fmt((S.share/62)*18.75)} M — el resto del mundo entrega bienes reales por tus dólares`);
+  return out;
+}
+
+/* ================= FIN DE PARTIDA ================= */
+let ended=false;
+function checkEnd(){
+  let key=null;
+  if(S.share<45)key='collapse';
+  else if(S.econ<12)key='depression';
+  else if(S.infl>13){ S.inflOver++; if(S.inflOver>=2)key='hyper'; } else S.inflOver=0;
+  if(!key&&S.q>=N_TURNS)key=S.share>=52?'victory':'survive';
+  if(!key)return false;
+  ended=true; S.busy=true;
+  const T={
+   collapse:['Fin del imprimir gratis','var(--red)',
+    `No hubo desplome repentino. Como la <b style="color:var(--paper)">libra esterlina</b> entre 1913 y 1944, la salida fue gradual — y luego, de golpe. El mundo dejó de demandar tu deuda de forma automática: las tasas se dispararon para atraer compradores y la austeridad estructural te fue impuesta desde el mercado. La hegemonía del dólar ha quedado agrietada para siempre.`],
+   depression:['La máquina se detiene','var(--gold)',
+    `La economía interna no soportó el experimento. Entre la inflación y los tipos, el empleo y el crédito colapsaron, y la presión política terminó con algo más valioso que cualquier punto básico: <b style="color:var(--paper)">la independencia del banco central</b>.`],
+   hyper:['Pérdida de control','var(--red)',
+    `Los precios crecieron más rápido que la imprenta. Un banco central que infla su moneda a este ritmo deja de ser reserva de valor… y una moneda que no reserva valor <b style="color:var(--paper)">deja de ser reserva del mundo</b>.`],
+   victory:['Hegemonía defendida','var(--green)',
+    `Llegaste a 2030 con el dólar dominante. El mundo siguió entregando bienes y servicios reales a cambio de tus dólares electrónicos: el <b style="color:var(--paper)">señoreaje global</b> siguió pagando tus cuentas. Lograste lo que parecía imposible: frenar la salida gradual.`],
+   survive:['Supervivencia','var(--gold)',
+    `Retuviste la corona, pero perdiste peso. Cada trimestre cediste terreno al oro, a las monedas no tradicionales y a los sistemas de pago alternativos. Como la libra esterlina, la salida es gradual — y <b style="color:var(--paper)">tú la has estado dirigiendo</b>.`]
+  }[key];
+  $('endTitle').innerHTML=T[0]; $('endTitle').style.color=T[1];
+  $('endBody').innerHTML=T[2];
+  $('endKick').textContent=`INFORME FINAL · ${yearOf(Math.min(S.q,N_TURNS-1))} · T${trimOf(Math.min(S.q,N_TURNS-1))}`;
+  $('endStats').innerHTML=[
+   ['Peso final del dólar en reservas',dec(S.share,1)+' %'],
+   ['Dinero creado desde 2020','$'+fmt(S.printed)+' M ('+dec(S.printed/12000*40,1)+'% de M2)'],
+   ['Oro acumulado por bancos centrales',fmt(S.gold)+' t'],
+   ['Defaults soberanos bajo tu mandato',String(S.defaults)],
+   ['Señoreaje global percibido','$'+fmt(S.paxa)+' M'],
+   ['Veredicto del histórico',S.share>=52?'la hegemonía resiste':S.share>=45?'erosión contenida':'colapso de la demanda de deuda']
+  ].map(r=>`<div class="led"><b>${r[0]}</b><span style="margin-left:auto;text-align:right">${r[1]}</span></div>`).join('');
+  setTimeout(()=>$('end').classList.add('on'),700);
+  return true;
+}
+ $('againBtn').onclick=()=>location.reload();
+
+/* ================= ARRANQUE ================= */
+buildGauges(); sizeChart(); updateGauges(false); rebuildTicker();
+addLedger('2000–20','El dólar cae de 71% a 60% de las reservas mundiales del planeta');
+ $('startBtn').onclick=()=>{
+  $('intro').style.display='none'; $('game').style.display='block';
+  sizeChart(); updateGauges(false);
+  fired.add('covid'); setTimeout(()=>showEvent(SCRIPT[0]),350);
+};
+</script>
+</body>
+</html>
